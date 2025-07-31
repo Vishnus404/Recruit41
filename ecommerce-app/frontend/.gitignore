@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#Extra files
+
+AppFixed.jsx
+AppNew.jsx
+ProductsPageClean.jsx
+ProductsPageNew.jsx

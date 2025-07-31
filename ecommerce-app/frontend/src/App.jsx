@@ -1,34 +1,101 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import ProductsPage from './pages/ProductsPage'
+import CategoriesPage from './pages/CategoriesPage'
+import CartPage from './pages/CartPage'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+function Header() {
+  const location = useLocation()
+  
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true
+    if (path !== '/' && location.pathname.startsWith(path)) return true
+    return false
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <header className="header">
+      <div className="container">
+        <div className="header-content">
+          <Link to="/" className="logo">
+            <span className="logo-icon">🛍️</span>
+            E-Commerce Store
+          </Link>
+          <nav className="nav">
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+              Home
+            </Link>
+            <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
+              Products
+            </Link>
+            <Link to="/categories" className={`nav-link ${isActive('/categories') ? 'active' : ''}`}>
+              Categories
+            </Link>
+            <Link to="/cart" className={`nav-link ${isActive('/cart') ? 'active' : ''}`}>
+              Cart
+            </Link>
+          </nav>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+    </header>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-content">
+          <div className="footer-section">
+            <h4>About Us</h4>
+            <p>Your trusted e-commerce partner with thousands of quality products.</p>
+          </div>
+          <div className="footer-section">
+            <h4>Quick Links</h4>
+            <Link to="/products" className="footer-link">All Products</Link>
+            <Link to="/categories" className="footer-link">Categories</Link>
+            <Link to="/cart" className="footer-link">Shopping Cart</Link>
+          </div>
+          <div className="footer-section">
+            <h4>Customer Service</h4>
+            <a href="#" className="footer-link">Contact Us</a>
+            <a href="#" className="footer-link">FAQ</a>
+            <a href="#" className="footer-link">Returns</a>
+          </div>
+          <div className="footer-section">
+            <h4>Follow Us</h4>
+            <a href="#" className="footer-link">Facebook</a>
+            <a href="#" className="footer-link">Twitter</a>
+            <a href="#" className="footer-link">Instagram</a>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>&copy; 2025 E-Commerce Store. All rights reserved.</p>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </footer>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <div className="app">
+        <Header />
+        
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/cart" element={<CartPage />} />
+          </Routes>
+        </main>
+        
+        <Footer />
+      </div>
+    </Router>
   )
 }
 
