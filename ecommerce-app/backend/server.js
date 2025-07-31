@@ -59,6 +59,7 @@ import Order from './models/Order.js';
 import OrderItem from './models/OrderItem.js';
 import InventoryItem from './models/InventoryItem.js';
 import DistributionCenter from './models/Distribution.js';
+import Department from './models/Department.js';
 
 // Basic routes
 app.get('/', (req, res) => {
@@ -149,7 +150,19 @@ app.get('/api/products', async (req, res) => {
     const filter = {};
     if (category) filter.category = new RegExp(category, 'i');
     if (brand) filter.brand = new RegExp(brand, 'i');
-    if (department) filter.department = new RegExp(department, 'i');
+    
+    // Support both old department string and new department_id filtering
+    if (department) {
+      // Try to find department by name first (for new structure)
+      const departmentDoc = await Department.findOne({ name: new RegExp(department, 'i') });
+      if (departmentDoc) {
+        filter.department_id = departmentDoc._id;
+      } else {
+        // Fallback to old department string filtering
+        filter.department = new RegExp(department, 'i');
+      }
+    }
+    
     if (minPrice || maxPrice) {
       filter.retail_price = {};
       if (minPrice) filter.retail_price.$gte = minPrice;
@@ -169,6 +182,7 @@ app.get('/api/products', async (req, res) => {
     // Execute queries
     const [products, total] = await Promise.all([
       Product.find(filter)
+        .populate('department_id', 'name description isActive') // Populate department info
         .select('-__v -createdAt -updatedAt') // Exclude internal fields
         .sort({ created_at: -1 })
         .skip(skip)
@@ -217,6 +231,12 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/products/categories', async (req, res) => {
   try {
     const categories = await Product.aggregate([
+      // Filter out null/empty categories
+      { 
+        $match: { 
+          category: { $exists: true, $ne: null, $ne: "" } 
+        } 
+      },
       {
         $group: {
           _id: '$category',
@@ -226,14 +246,17 @@ app.get('/api/products/categories', async (req, res) => {
       },
       {
         $project: {
-          category: '$_id',
+          _id: 1, // Keep _id (which contains the category name)
           count: 1,
-          avgPrice: { $round: ['$avgPrice', 2] },
-          _id: 0
+          avgPrice: { $round: ['$avgPrice', 2] }
         }
       },
-      { $sort: { count: -1 } }
+      { $sort: { count: -1 } },
+      { $limit: 50 } // Limit to top 50 categories
     ]);
+
+    console.log('Categories found:', categories.length); // Debug log
+    console.log('Sample categories:', categories.slice(0, 3)); // Debug log
 
     res.json({
       success: true,
@@ -290,6 +313,165 @@ app.get('/api/products/brands', async (req, res) => {
   }
 });
 
+// Get all departments
+app.get('/api/departments', async (req, res) => {
+  try {
+    const includeStats = req.query.includeStats === 'true';
+
+    if (includeStats) {
+      // Get departments with product statistics
+      const departments = await Department.aggregate([
+        {
+          $lookup: {
+            from: 'products',
+            localField: '_id',
+            foreignField: 'department_id',
+            as: 'products'
+          }
+        },
+        {
+          $project: {
+            name: 1,
+            description: 1,
+            isActive: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            productCount: { $size: '$products' },
+            avgPrice: { 
+              $round: [{ $avg: '$products.retail_price' }, 2] 
+            }
+          }
+        },
+        { $sort: { name: 1 } }
+      ]);
+
+      res.json({
+        success: true,
+        data: departments,
+        total: departments.length
+      });
+    } else {
+      // Get simple department list
+      const departments = await Department.find({ isActive: true })
+        .select('name description isActive')
+        .sort({ name: 1 });
+
+      res.json({
+        success: true,
+        data: departments,
+        total: departments.length
+      });
+    }
+
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch departments'
+    });
+  }
+});
+
+// Get products by department
+app.get('/api/departments/:id/products', async (req, res) => {
+  try {
+    const departmentId = req.params.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Validate department exists
+    const department = await Department.findById(departmentId);
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        error: 'Department not found',
+        message: `Department with ID ${departmentId} does not exist`
+      });
+    }
+
+    // Get products in this department
+    const [products, total] = await Promise.all([
+      Product.find({ department_id: departmentId })
+        .populate('department_id', 'name description')
+        .select('-__v -createdAt -updatedAt')
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit),
+      Product.countDocuments({ department_id: departmentId })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      success: true,
+      data: {
+        department,
+        products,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems: total,
+          itemsPerPage: limit,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching department products:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch department products'
+    });
+  }
+});
+
+// DEBUG: Sample products endpoint to check data quality
+app.get('/api/debug/sample-products', async (req, res) => {
+  try {
+    const sampleProducts = await Product.find({})
+      .populate('department_id', 'name description')
+      .select('name category brand department department_id retail_price')
+      .limit(10);
+    
+    const categoryStats = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalProducts: { $sum: 1 },
+          nullCategories: { 
+            $sum: { 
+              $cond: [{ $or: [{ $eq: ['$category', null] }, { $eq: ['$category', ''] }] }, 1, 0] 
+            } 
+          },
+          validCategories: { 
+            $sum: { 
+              $cond: [{ $and: [{ $ne: ['$category', null] }, { $ne: ['$category', ''] }] }, 1, 0] 
+            } 
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      sampleProducts,
+      stats: categoryStats[0] || { totalProducts: 0, nullCategories: 0, validCategories: 0 }
+    });
+
+  } catch (error) {
+    console.error('Error in debug endpoint:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Debug endpoint failed'
+    });
+  }
+});
+
 // GET /api/products/:id - Get a specific product by ID (MUST come after specific routes)
 app.get('/api/products/:id', async (req, res) => {
   try {
@@ -305,11 +487,15 @@ app.get('/api/products/:id', async (req, res) => {
     }
 
     // Try to find by custom ID first, then by MongoDB _id
-    let product = await Product.findOne({ id: id }).select('-__v -createdAt -updatedAt');
+    let product = await Product.findOne({ id: id })
+      .populate('department_id', 'name description isActive')
+      .select('-__v -createdAt -updatedAt');
     
     // If not found by custom ID, try MongoDB _id (if it looks like ObjectId)
     if (!product && id.match(/^[0-9a-fA-F]{24}$/)) {
-      product = await Product.findById(id).select('-__v -createdAt -updatedAt');
+      product = await Product.findById(id)
+        .populate('department_id', 'name description isActive')
+        .select('-__v -createdAt -updatedAt');
     }
 
     if (!product) {
@@ -461,6 +647,81 @@ app.use((err, req, res, next) => {
 });
 
 // Enhanced 404 handler
+// Migration endpoint to setup departments (for development/deployment)
+app.post('/api/admin/migrate-departments', async (req, res) => {
+  try {
+    console.log('🚀 Starting Department Migration via API...');
+
+    // Step 1: Get unique department names
+    const uniqueDepartments = await Product.distinct('department');
+    console.log(`Found ${uniqueDepartments.length} unique departments`);
+
+    // Step 2: Create departments
+    const departmentMap = new Map();
+    let departmentsCreated = 0;
+    
+    for (const deptName of uniqueDepartments) {
+      if (!deptName || deptName.trim() === '') continue;
+
+      let department = await Department.findOne({ name: deptName.trim() });
+      
+      if (!department) {
+        department = new Department({
+          name: deptName.trim(),
+          description: `${deptName.trim()} department`,
+          isActive: true
+        });
+        await department.save();
+        departmentsCreated++;
+        console.log(`✅ Created department: ${department.name}`);
+      }
+      
+      departmentMap.set(deptName.trim(), department._id);
+    }
+
+    // Step 3: Update products
+    let productsUpdated = 0;
+    
+    for (const [deptName, deptId] of departmentMap) {
+      const result = await Product.updateMany(
+        { department: deptName, department_id: { $exists: false } },
+        { $set: { department_id: deptId } }
+      );
+      productsUpdated += result.modifiedCount;
+    }
+
+    // Verification
+    const withDeptId = await Product.countDocuments({ department_id: { $exists: true } });
+    const withoutDeptId = await Product.countDocuments({ 
+      department_id: { $exists: false },
+      department: { $exists: true, $ne: null, $ne: '' }
+    });
+
+    console.log('🎉 Migration completed via API!');
+
+    res.json({
+      success: true,
+      message: 'Department migration completed successfully',
+      results: {
+        departmentsCreated,
+        productsUpdated,
+        productsWithDeptId: withDeptId,
+        productsWithoutDeptId: withoutDeptId,
+        totalDepartments: departmentMap.size
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Migration failed',
+      message: error.message
+    });
+  }
+});
+
+// 404 handler for unknown routes
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -468,7 +729,9 @@ app.use('*', (req, res) => {
     message: `Cannot ${req.method} ${req.originalUrl}`,
     availableRoutes: {
       products: '/api/products',
+      departments: '/api/departments',
       health: '/health',
+      migration: 'POST /api/admin/migrate-departments',
       root: '/'
     }
   });

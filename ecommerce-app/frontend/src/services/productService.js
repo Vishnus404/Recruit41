@@ -86,6 +86,30 @@ export const productService = {
       throw error;
     }
   },
+
+  // Get all departments
+  getDepartments: async (includeStats = false) => {
+    try {
+      const response = await api.get('/departments', {
+        params: { includeStats }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get products by department ID
+  getProductsByDepartmentId: async (departmentId, params = {}) => {
+    try {
+      const response = await api.get(`/departments/${departmentId}/products`, {
+        params
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default productService;

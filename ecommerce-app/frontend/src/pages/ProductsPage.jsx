@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 function ProductsPage() {
   const [products, setProducts] = useState([])
@@ -191,17 +192,21 @@ function ProductsPage() {
             <div className="products-grid">
               {products.map(product => (
                 <div key={product._id} className="product-card">
-                  <div className="product-image">
-                    <span className="product-placeholder">📦</span>
-                    <div className="product-badge">{product.department}</div>
-                  </div>
-                  <div className="product-info">
-                    <h4 className="product-name">{product.name}</h4>
-                    <p className="product-brand">{product.brand}</p>
-                    <div className="product-price">
-                      <span className="price">${product.retail_price?.toFixed(2)}</span>
-                      <span className="department">{product.category}</span>
+                  <Link to={`/products/${product._id}`} className="product-link">
+                    <div className="product-image">
+                      <span className="product-placeholder">📦</span>
+                      <div className="product-badge">{product.department}</div>
                     </div>
+                    <div className="product-info">
+                      <h4 className="product-name">{product.name}</h4>
+                      <p className="product-brand">{product.brand}</p>
+                      <div className="product-price">
+                        <span className="price">${product.retail_price?.toFixed(2)}</span>
+                        <span className="department">{product.category}</span>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="product-actions">
                     <button 
                       className="btn btn-primary add-to-cart-btn"
                       onClick={() => addToCart(product)}

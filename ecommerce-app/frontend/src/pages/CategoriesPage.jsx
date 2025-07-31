@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 function CategoriesPage() {
   const [categories, setCategories] = useState([])
@@ -126,6 +127,27 @@ function CategoriesPage() {
           {selectedCategory ? `${selectedCategory} Products` : 'Shop by Category'}
         </h2>
 
+        {/* Debug button - remove in production */}
+        {!selectedCategory && (
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <button 
+              className="btn btn-secondary"
+              onClick={async () => {
+                try {
+                  const response = await fetch('http://localhost:3000/api/debug/sample-products');
+                  const data = await response.json();
+                  console.log('Debug data:', data);
+                  alert('Check console for debug data');
+                } catch (err) {
+                  console.error('Debug failed:', err);
+                }
+              }}
+            >
+              🔍 Debug Database
+            </button>
+          </div>
+        )}
+
         {selectedCategory && (
           <div className="breadcrumb">
             <button 
@@ -142,28 +164,34 @@ function CategoriesPage() {
 
         {!selectedCategory ? (
           <div className="categories-grid">
-            {categories.map((category, index) => (
-              <div 
-                key={index}
-                className="category-card"
-                onClick={() => fetchProductsByCategory(category._id)}
-              >
-                <div className="category-icon">
-                  {getCategoryIcon(category._id)}
-                </div>
-                <h3 className="category-name">
-                  {category._id || 'Unknown Category'}
-                </h3>
-                <p className="category-count">
-                  {category.count || 0} products
-                </p>
-                {category.avgPrice && (
-                  <p className="category-price">
-                    Avg: ${category.avgPrice.toFixed(2)}
+            {categories.map((category, index) => {
+              console.log('Rendering category:', category); // Debug log
+              const categoryName = category._id || category.category || 'Unknown Category';
+              const categoryCount = category.count || 0;
+              
+              return (
+                <div 
+                  key={index}
+                  className="category-card"
+                  onClick={() => fetchProductsByCategory(categoryName)}
+                >
+                  <div className="category-icon">
+                    {getCategoryIcon(categoryName)}
+                  </div>
+                  <h3 className="category-name">
+                    {categoryName}
+                  </h3>
+                  <p className="category-count">
+                    {categoryCount} products
                   </p>
-                )}
-              </div>
-            ))}
+                  {category.avgPrice && (
+                    <p className="category-price">
+                      Avg: ${category.avgPrice.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div>
@@ -182,17 +210,21 @@ function CategoriesPage() {
               <div className="products-grid">
                 {products.map(product => (
                   <div key={product._id} className="product-card">
-                    <div className="product-image">
-                      <span className="product-placeholder">📦</span>
-                      <div className="product-badge">{product.department}</div>
-                    </div>
-                    <div className="product-info">
-                      <h4 className="product-name">{product.name}</h4>
-                      <p className="product-brand">{product.brand}</p>
-                      <div className="product-price">
-                        <span className="price">${product.retail_price?.toFixed(2)}</span>
-                        <span className="department">{product.category}</span>
+                    <Link to={`/products/${product._id}`} className="product-link">
+                      <div className="product-image">
+                        <span className="product-placeholder">📦</span>
+                        <div className="product-badge">{product.department}</div>
                       </div>
+                      <div className="product-info">
+                        <h4 className="product-name">{product.name}</h4>
+                        <p className="product-brand">{product.brand}</p>
+                        <div className="product-price">
+                          <span className="price">${product.retail_price?.toFixed(2)}</span>
+                          <span className="department">{product.category}</span>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="product-actions">
                       <button 
                         className="btn btn-primary add-to-cart-btn"
                         onClick={() => addToCart(product)}

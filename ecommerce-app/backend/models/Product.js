@@ -40,9 +40,15 @@ const productSchema = new mongoose.Schema({
     required: true,
     min: [0, 'Retail price cannot be negative']
   },
+  department_id: { 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    required: true,
+    index: true
+  },
+  // Keep the old department field temporarily for migration
   department: { 
     type: String,
-    required: true,
     trim: true,
     index: true
   },
@@ -65,11 +71,24 @@ const productSchema = new mongoose.Schema({
 
 // Create compound indexes for better performance (distribution_center_id index already created by index: true)
 productSchema.index({ category: 1, brand: 1 });
-productSchema.index({ department: 1, category: 1 });
+productSchema.index({ department_id: 1, category: 1 });
+productSchema.index({ department: 1, category: 1 }); // Keep for migration
 
 // Virtual for profit margin
 productSchema.virtual('profitMargin').get(function() {
   return this.retail_price - this.cost;
 });
+
+// Virtual to populate department information
+productSchema.virtual('departmentInfo', {
+  ref: 'Department',
+  localField: 'department_id',
+  foreignField: '_id',
+  justOne: true
+});
+
+// Ensure virtual fields are serialized
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model('Product', productSchema);

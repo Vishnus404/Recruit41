@@ -884,8 +884,269 @@
 }
 
 /* ===========================================
-   📱 RESPONSIVE DESIGN
+   📦 PRODUCT DETAIL PAGE STYLES
    =========================================== */
+
+.product-detail-page {
+  padding: 2rem 0;
+}
+
+.product-detail-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-top: 2rem;
+}
+
+.product-detail-image {
+  position: relative;
+}
+
+.product-image-placeholder {
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, rgba(136, 119, 255, 0.1) 0%, rgba(255, 0, 150, 0.1) 100%);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-placeholder-large {
+  font-size: 6rem;
+  opacity: 0.7;
+}
+
+.product-badges {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.badge-department {
+  background: var(--primary-color);
+  color: white;
+}
+
+.badge-category {
+  background: var(--secondary-color);
+  color: white;
+}
+
+.product-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.product-detail-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.product-detail-brand {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+.product-detail-price {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.current-price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.cost-price {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.product-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-item {
+  color: var(--text-secondary);
+}
+
+.detail-item strong {
+  color: var(--text-primary);
+}
+
+.product-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quantity-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quantity-selector label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+}
+
+.qty-input {
+  width: 80px;
+  padding: 0.75rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.action-buttons .btn {
+  flex: 1;
+}
+
+.product-extra-info {
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-section h3 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.info-section p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ===========================================
+   📱 RESPONSIVE DESIGN FOR PRODUCT DETAIL
+   =========================================== */
+
+@media (max-width: 768px) {
+  .product-detail-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .product-detail-title {
+    font-size: 2rem;
+  }
+  
+  .current-price {
+    font-size: 1.5rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .product-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================================
+   🔗 CLICKABLE PRODUCT CARDS
+   =========================================== */
+
+.product-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--primary-color);
+  box-shadow: 0 20px 40px rgba(136, 119, 255, 0.2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.product-link {
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-link:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.product-actions {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-actions .btn {
+  width: 100%;
+}
 
 @media (max-width: 768px) {
   .header-content {

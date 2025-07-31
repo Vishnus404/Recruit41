@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
 function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([])
@@ -65,7 +66,7 @@ function HomePage() {
           ) : (
             <div className="products-grid">
               {featuredProducts.map(product => (
-                <div key={product._id} className="product-card">
+                <Link key={product._id} to={`/products/${product._id}`} className="product-card">
                   <div className="product-image">
                     <span className="product-placeholder">📦</span>
                     <div className="product-badge">{product.department}</div>
@@ -78,7 +79,7 @@ function HomePage() {
                       <span className="department">{product.category}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
