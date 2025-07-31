@@ -20,8 +20,14 @@ const productSchema = new mongoose.Schema({
   },
   name: { 
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Product name is required'],
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return v && v.trim().length > 0;
+      },
+      message: 'Product name cannot be empty'
+    }
   },
   brand: { 
     type: String,

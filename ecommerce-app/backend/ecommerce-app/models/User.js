@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
   },
   traffic_source: { 
     type: String,
-    enum: ['Search', 'Email', 'Social', 'Direct', 'Referral', 'Organic'],
+    enum: ['Search', 'Email', 'Social', 'Direct', 'Referral', 'Organic', 'Display', 'Facebook'],
     trim: true
   },
   created_at: { 
