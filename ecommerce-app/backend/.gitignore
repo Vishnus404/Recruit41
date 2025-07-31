@@ -137,3 +137,9 @@ coverage/
 # Build artifacts
 build/
 dist/
+
+debug-departments.ps1
+start-server.ps1
+test-departments-server.js
+start-backend.bat
+start-backend.ps1

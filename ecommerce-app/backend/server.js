@@ -399,55 +399,9 @@ app.get('/api/departments/:id', async (req, res) => {
       });
     }
 
-    // Get department with product statistics
-    const departmentDetails = await Department.aggregate([
-      {
-        $match: { _id: new mongoose.Types.ObjectId(departmentId) }
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: '_id',
-          foreignField: 'department_id',
-          as: 'products'
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          description: 1,
-          isActive: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          productCount: { $size: '$products' },
-          avgPrice: { 
-            $round: [{ $avg: '$products.retail_price' }, 2] 
-          },
-          minPrice: { $min: '$products.retail_price' },
-          maxPrice: { $max: '$products.retail_price' },
-          // Top brands in this department
-          topBrands: {
-            $slice: [
-              {
-                $map: {
-                  input: {
-                    $sortByCount: '$products.brand'
-                  },
-                  as: 'brandInfo',
-                  in: {
-                    brand: '$$brandInfo._id',
-                    count: '$$brandInfo.count'
-                  }
-                }
-              },
-              5
-            ]
-          }
-        }
-      }
-    ]);
-
-    if (!departmentDetails || departmentDetails.length === 0) {
+    // Get basic department info first
+    const department = await Department.findById(departmentId);
+    if (!department) {
       return res.status(404).json({
         success: false,
         error: 'Department not found',
@@ -455,11 +409,76 @@ app.get('/api/departments/:id', async (req, res) => {
       });
     }
 
-    const department = departmentDetails[0];
+    // Get product statistics using separate aggregation
+    const productStats = await Product.aggregate([
+      {
+        $match: { department_id: new mongoose.Types.ObjectId(departmentId) }
+      },
+      {
+        $group: {
+          _id: null,
+          productCount: { $sum: 1 },
+          avgPrice: { $avg: '$retail_price' },
+          minPrice: { $min: '$retail_price' },
+          maxPrice: { $max: '$retail_price' }
+        }
+      }
+    ]);
+
+    // Get top brands using separate aggregation
+    const topBrandsData = await Product.aggregate([
+      {
+        $match: { 
+          department_id: new mongoose.Types.ObjectId(departmentId),
+          brand: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $group: {
+          _id: '$brand',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      },
+      {
+        $limit: 5
+      },
+      {
+        $project: {
+          brand: '$_id',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Prepare response data
+    const stats = productStats.length > 0 ? productStats[0] : {
+      productCount: 0,
+      avgPrice: 0,
+      minPrice: 0,
+      maxPrice: 0
+    };
+
+    const response = {
+      _id: department._id,
+      name: department.name,
+      description: department.description,
+      isActive: department.isActive,
+      createdAt: department.createdAt,
+      updatedAt: department.updatedAt,
+      productCount: stats.productCount,
+      avgPrice: Math.round((stats.avgPrice || 0) * 100) / 100,
+      minPrice: stats.minPrice || 0,
+      maxPrice: stats.maxPrice || 0,
+      topBrands: topBrandsData || []
+    };
 
     res.json({
       success: true,
-      data: department
+      data: response
     });
 
   } catch (error) {

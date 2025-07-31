@@ -4,6 +4,8 @@ import ProductsPage from './pages/ProductsPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CategoriesPage from './pages/CategoriesPage'
 import CartPage from './pages/CartPage'
+import DepartmentListPage from './pages/DepartmentListPageAPI'
+import DepartmentPage from './pages/DepartmentPageAPI'
 import './App.css'
 
 function Header() {
@@ -30,6 +32,9 @@ function Header() {
             <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
               Products
             </Link>
+            <Link to="/departments" className={`nav-link ${isActive('/departments') ? 'active' : ''}`}>
+              Departments
+            </Link>
             <Link to="/categories" className={`nav-link ${isActive('/categories') ? 'active' : ''}`}>
               Categories
             </Link>
@@ -55,6 +60,7 @@ function Footer() {
           <div className="footer-section">
             <h4>Quick Links</h4>
             <Link to="/products" className="footer-link">All Products</Link>
+            <Link to="/departments" className="footer-link">Departments</Link>
             <Link to="/categories" className="footer-link">Categories</Link>
             <Link to="/cart" className="footer-link">Shopping Cart</Link>
           </div>
@@ -90,6 +96,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/departments" element={<DepartmentListPage />} />
+            <Route path="/departments/:id" element={<DepartmentPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/cart" element={<CartPage />} />
           </Routes>

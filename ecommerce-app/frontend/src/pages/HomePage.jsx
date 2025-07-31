@@ -85,9 +85,39 @@ function HomePage() {
           )}
           
           <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <a href="/products" className="btn btn-primary btn-large">
+            <Link to="/products" className="btn btn-primary btn-large">
               View All Products
-            </a>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Shop by Department */}
+      <section className="departments-section">
+        <div className="container">
+          <h2 className="section-title">Shop by Department</h2>
+          <p className="section-subtitle">Browse our product collections organized by department</p>
+          
+          <div className="departments-preview">
+            <Link to="/departments" className="department-preview-card">
+              <div className="department-icon">👥</div>
+              <h3>Men's Department</h3>
+              <p>Discover our men's collection with thousands of products</p>
+              <span className="browse-link">Browse Men's →</span>
+            </Link>
+            
+            <Link to="/departments" className="department-preview-card">
+              <div className="department-icon">👩</div>
+              <h3>Women's Department</h3>
+              <p>Explore our women's collection with the latest trends</p>
+              <span className="browse-link">Browse Women's →</span>
+            </Link>
+          </div>
+          
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <Link to="/departments" className="btn btn-secondary btn-large">
+              View All Departments
+            </Link>
           </div>
         </div>
       </section>
