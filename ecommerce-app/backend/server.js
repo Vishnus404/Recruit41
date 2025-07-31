@@ -316,10 +316,10 @@ app.get('/api/products/brands', async (req, res) => {
 // Get all departments
 app.get('/api/departments', async (req, res) => {
   try {
-    const includeStats = req.query.includeStats === 'true';
+    const includeStats = req.query.includeStats !== 'false'; // Default to true
 
     if (includeStats) {
-      // Get departments with product statistics
+      // Get departments with product statistics (default)
       const departments = await Department.aggregate([
         {
           $lookup: {
@@ -331,12 +331,14 @@ app.get('/api/departments', async (req, res) => {
         },
         {
           $project: {
+            id: '$_id', // Add id field as required by spec
+            _id: 1,
             name: 1,
             description: 1,
             isActive: 1,
             createdAt: 1,
             updatedAt: 1,
-            productCount: { $size: '$products' },
+            product_count: { $size: '$products' }, // Use product_count as per spec
             avgPrice: { 
               $round: [{ $avg: '$products.retail_price' }, 2] 
             }
@@ -347,19 +349,29 @@ app.get('/api/departments', async (req, res) => {
 
       res.json({
         success: true,
-        data: departments,
+        departments: departments, // Use 'departments' key as per spec
         total: departments.length
       });
     } else {
-      // Get simple department list
+      // Get simple department list without stats
       const departments = await Department.find({ isActive: true })
         .select('name description isActive')
         .sort({ name: 1 });
 
+      // Add product_count: 0 to maintain consistency
+      const departmentsWithCount = departments.map(dept => ({
+        id: dept._id,
+        _id: dept._id,
+        name: dept.name,
+        description: dept.description,
+        isActive: dept.isActive,
+        product_count: 0
+      }));
+
       res.json({
         success: true,
-        data: departments,
-        total: departments.length
+        departments: departmentsWithCount,
+        total: departmentsWithCount.length
       });
     }
 
@@ -369,6 +381,93 @@ app.get('/api/departments', async (req, res) => {
       success: false,
       error: 'Internal server error',
       message: 'Failed to fetch departments'
+    });
+  }
+});
+
+// Get specific department details
+app.get('/api/departments/:id', async (req, res) => {
+  try {
+    const departmentId = req.params.id;
+
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid department ID',
+        message: 'Department ID must be a valid MongoDB ObjectId'
+      });
+    }
+
+    // Get department with product statistics
+    const departmentDetails = await Department.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(departmentId) }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: 'department_id',
+          as: 'products'
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          isActive: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          productCount: { $size: '$products' },
+          avgPrice: { 
+            $round: [{ $avg: '$products.retail_price' }, 2] 
+          },
+          minPrice: { $min: '$products.retail_price' },
+          maxPrice: { $max: '$products.retail_price' },
+          // Top brands in this department
+          topBrands: {
+            $slice: [
+              {
+                $map: {
+                  input: {
+                    $sortByCount: '$products.brand'
+                  },
+                  as: 'brandInfo',
+                  in: {
+                    brand: '$$brandInfo._id',
+                    count: '$$brandInfo.count'
+                  }
+                }
+              },
+              5
+            ]
+          }
+        }
+      }
+    ]);
+
+    if (!departmentDetails || departmentDetails.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Department not found',
+        message: `Department with ID ${departmentId} does not exist`
+      });
+    }
+
+    const department = departmentDetails[0];
+
+    res.json({
+      success: true,
+      data: department
+    });
+
+  } catch (error) {
+    console.error('Error fetching department details:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to fetch department details'
     });
   }
 });
@@ -406,17 +505,22 @@ app.get('/api/departments/:id/products', async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        department,
-        products,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalItems: total,
-          itemsPerPage: limit,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
+      department: department.name, // Use department name as per spec
+      departmentInfo: {
+        id: department._id,
+        name: department.name,
+        description: department.description,
+        isActive: department.isActive,
+        product_count: total
+      },
+      products: products,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       }
     });
 
